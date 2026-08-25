@@ -1,0 +1,10 @@
+{
+  "name": "github-tools",
+  "description": "GitHub PR maintenance and general GitHub operations skill family for Claude: automation detection, CI failure triage, merge-conflict rebase requests, review/comment handling, broken coding-agent PR reassignment, and a full-PR orchestrator.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Philipp Lengauer",
+    "url": "https://github.com/plengauer"
+  },
+  "keywords": ["github", "pull-requests", "ci", "code-review", "automation"]
+}

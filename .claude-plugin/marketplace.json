@@ -1,0 +1,15 @@
+{
+  "name": "skills-github",
+  "owner": {
+    "name": "Philipp Lengauer",
+    "url": "https://github.com/plengauer"
+  },
+  "description": "GitHub workflow skills for Claude: PR triage/maintenance automation and general GitHub operations.",
+  "plugins": [
+    {
+      "name": "github-tools",
+      "source": "./plugins/github-tools",
+      "description": "GitHub PR maintenance and general GitHub operations skill family: tool-priority ladder for GitHub actions, automation/coding-agent detection, volatile CI failure detection and rerun, deep check-failure analysis, merge-conflict rebase requests, review/comment triage, broken coding-agent PR reassignment, automation PR approval, and a full-PR orchestrator."
+    }
+  ]
+}
