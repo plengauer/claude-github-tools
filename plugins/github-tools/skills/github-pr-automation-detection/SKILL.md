@@ -3,7 +3,7 @@ name: github-pr-automation-detection
 description: >
   Classify whether a GitHub pull request was opened by self-updating
   automation (Renovate, version-bump, OTel-deploy, workflow-recompile,
-  and similar) versus a human or a coding agent like Copilot/Claude —
+  and similar) versus a human or a coding agent like Copilot/Claude/Codex —
   and return that classification for another skill or task to act on.
   This skill does not take any action itself; it's a classifier other
   skills consult before deciding whether to arm auto-merge, ask for a
@@ -16,7 +16,7 @@ description: >
 
 A classifier, not an action. Given a pull request, decide which of three
 buckets it falls into — **self-updating automation**, **coding agent**
-(Copilot, Claude, or similar), or **ordinary human PR** — and hand that
+(Copilot, Claude, Codex, or similar), or **ordinary human PR** — and hand that
 back. What the calling skill does with the answer (arm auto-merge, ask
 for a rebase, approve it, approve a stuck run) is out of scope here.
 
@@ -99,5 +99,5 @@ meant to grow from confirmed real examples, not speculation.
 
 When consulted, report back per PR: `automation` (self-updating,
 specify which known category matched), `coding-agent` (specify Copilot
-or Claude), or `human` (includes anything ambiguous/unmatched). Calling
+or Claude or Codex), or `human` (includes anything ambiguous/unmatched). Calling
 skills use this label directly in their own task logic and reporting.
