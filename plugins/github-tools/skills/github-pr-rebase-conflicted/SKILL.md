@@ -57,8 +57,8 @@ there's nothing for this skill to do — report that and stop.
 
 ## Task: classify, then ask for the rebase
 
-For a PR confirmed conflicted, consult the `github-pr-automation-
-detection` skill before treating it as something to raise:
+For a PR confirmed conflicted, consult the `github-pr-automation-detection`
+skill before treating it as something to raise:
 
 - **`automation`** (self-updating: Renovate, version-bump, OTel-deploy,
   workflow-recompile, etc.) → skip. It already keeps itself current —
