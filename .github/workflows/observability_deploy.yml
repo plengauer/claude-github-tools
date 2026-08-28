@@ -26,7 +26,7 @@ jobs:
             ${{ secrets.ACTIONS_GITHUB_TOKEN || github.token }}
             ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
             ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
-      - uses: plengauer/opentelemetry-github/actions/instrument/deploy@2169fb0fa9a8260fde99a2a185bbf99a5d63546e # v5.59.0
+      - uses: plengauer/opentelemetry-github/actions/instrument/deploy@be259b5ae1e13e2398a8b96dce8baeaddac0663d # v5.61.2
         with:
           github_token: ${{ secrets.ACTIONS_GITHUB_TOKEN || github.token }}
         env:
