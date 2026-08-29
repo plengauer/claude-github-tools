@@ -3,6 +3,7 @@ on:
   workflow_run:
     workflows:
       - Autobackport
+      - Autotriage
       - Autoversion
       - Claude
       - CodeQL
@@ -11,6 +12,7 @@ on:
       - Copilot code review
       - Copilot setup steps
       - OpenAI Codex
+      - Recompile Agentic Workflows
       - Renovate
     types:
       - completed
