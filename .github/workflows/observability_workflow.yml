@@ -2,6 +2,8 @@ name: OpenTelemetry
 on:
   workflow_run:
     workflows:
+      - Autobackport
+      - Autoversion
       - Claude
       - CodeQL
       - Copilot
