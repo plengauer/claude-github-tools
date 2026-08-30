@@ -16,6 +16,14 @@
  * plugin README) -- they're forwarded here only so someone who *does*
  * set them locally doesn't have to touch this script.
  *
+ * GH FALLBACK: if HTTP_AUTHORIZATION comes in empty (i.e. the
+ * userConfig github_token was left blank, substituting to a bare
+ * "Bearer "), and a `gh` CLI is on PATH, this runs `gh auth token` and
+ * uses that as the bearer token instead. If `gh` isn't installed, or
+ * isn't logged in, HTTP_AUTHORIZATION is left as-is (empty) and the
+ * downstream API call will fail auth -- this script does not treat
+ * that as fatal, since the docker-vs-stub logic is unrelated to auth.
+ *
  * IMPORTANT CAVEAT: Node has no equivalent of POSIX execve() that
  * replaces the current process image in place. This script approximates
  * "hand off to the docker process" by spawning it with inherited stdio
@@ -50,6 +58,29 @@ const FORWARD_ENV = [
 function commandExists(cmd, args) {
   const result = spawnSync(cmd, args, { stdio: 'ignore' });
   return !result.error && result.status !== null;
+}
+
+/**
+ * If HTTP_AUTHORIZATION is unset or empty (userConfig left blank),
+ * tries to fill it in from `gh auth token`. Mutates process.env in
+ * place; does nothing if `gh` isn't on PATH or isn't authenticated.
+ */
+function resolveGithubAuthorizationFallback() {
+  const current = (process.env.HTTP_AUTHORIZATION || '').trim();
+  if (current && current !== 'Bearer') {
+    return; // already have a real value from userConfig, leave it alone
+  }
+  if (!commandExists('gh', ['--version'])) {
+    return; // no gh CLI to fall back to
+  }
+  const result = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8' });
+  if (result.error || result.status !== 0) {
+    return; // gh installed but not logged in, or the lookup failed
+  }
+  const token = (result.stdout || '').trim();
+  if (token) {
+    process.env.HTTP_AUTHORIZATION = `Bearer ${token}`;
+  }
 }
 
 /**
@@ -164,6 +195,8 @@ function runStub() {
     }
   });
 }
+
+resolveGithubAuthorizationFallback();
 
 const resolved = resolveDocker();
 if (resolved) {
