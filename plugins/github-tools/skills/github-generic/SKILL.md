@@ -105,15 +105,9 @@ Use when Tier 2 also fails or is blocked. GraphQL is useful for:
 ### Tier 4 — GitHub CLI MCP (`GitHub CLI:*`)
 
 Use when Tiers 1–3 all fail or are blocked. This tier wraps the `gh` CLI
-itself (authenticated via the same GitHub token as the other tiers), so it's
-useful for anything that specifically requires `gh`'s own behavior rather
-than a raw API call — e.g. operations `gh` composes from multiple API calls
-internally, or `gh`-specific conveniences that don't have a direct REST/GraphQL
-equivalent.
-
-**Note:** this tier's tool names are provisional. They'll be finalized once
-the actual `gh`-based MCP server command is wired into this plugin's
-`.mcp.json` — update this section's tool prefix if that name changes.
+itself, authenticated via the same GitHub token as the other tiers. It can do
+everything an authenticated `gh` CLI can do — the full surface of `gh`'s own
+command set, including anything Tiers 1–3 don't expose.
 
 ### Tier 5 — Chrome (remote control)
 
