@@ -25,19 +25,25 @@
  * WSLENV being configured -- WSL does not share Windows environment
  * variables into the Linux environment by default.
  *
+ * PROTOCOL: built on @modelcontextprotocol/sdk (declared in this
+ * plugin's package.json, auto-installed by Claude Code's documented
+ * Node-dependency mechanism) rather than hand-parsed JSON-RPC. The
+ * "gh" tool is only registered with the SDK when gh was actually
+ * resolved; when it wasn't, the server still starts and answers the
+ * handshake, it just reports zero tools.
+ *
  * Caveats:
  * - stdout/stderr are captured separately and concatenated at the end
  *   in that order, not interleaved as they'd appear in a live
- *   terminal -- fine for typical `gh` output, but not a byte-for-byte
+ *   terminal -- fine for typical `gh` output, not a byte-for-byte
  *   terminal replay.
  * - Output isn't capped; a very large `gh` response is held fully in
  *   memory before being returned.
- * - Docker detection checks CLI presence only (`gh --version`), not
- *   whether it's actually authenticated.
+ * - Docker-style detection checks CLI presence only (`gh --version`),
+ *   not whether it's actually authenticated.
  */
 
 const { spawnSync, spawn } = require('child_process');
-const readline = require('readline');
 
 function commandExists(cmd, args) {
   const result = spawnSync(cmd, args, { stdio: 'ignore' });
@@ -106,75 +112,55 @@ const GH_TOOL = {
   },
 };
 
-function send(msg) {
-  process.stdout.write(JSON.stringify(msg) + '\n');
+async function main() {
+  let Server, StdioServerTransport, ListToolsRequestSchema, CallToolRequestSchema, ErrorCode, McpError;
+  try {
+    ({ Server } = require('@modelcontextprotocol/sdk/server/index.js'));
+    ({ StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js'));
+    ({
+      ListToolsRequestSchema,
+      CallToolRequestSchema,
+      ErrorCode,
+      McpError,
+    } = require('@modelcontextprotocol/sdk/types.js'));
+  } catch (err) {
+    process.stderr.write(
+      `gh-tool-or-stub.js: @modelcontextprotocol/sdk failed to load (${err.message}). ` +
+      `This plugin's Node dependencies may not have installed correctly.\n`
+    );
+    process.exit(1);
+  }
+
+  const build = resolveGh();
+
+  const server = new Server(
+    { name: 'gh-tool', version: build ? '1.0.0' : '0.0.0-no-gh' },
+    { capabilities: { tools: {} } }
+  );
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: build ? [GH_TOOL] : [],
+  }));
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    if (!build || request.params.name !== 'gh') {
+      throw new McpError(
+        ErrorCode.MethodNotFound,
+        build ? `Unknown tool: ${request.params.name}` : 'gh unavailable, no tools'
+      );
+    }
+    const result = await runGhTool(build, request.params.arguments);
+    return {
+      content: [{ type: 'text', text: result.text }],
+      isError: result.isError,
+    };
+  });
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
 }
 
-const build = resolveGh();
-
-const rl = readline.createInterface({ input: process.stdin, terminal: false });
-rl.on('line', async (line) => {
-  let msg;
-  try {
-    msg = JSON.parse(line);
-  } catch {
-    return; // ignore malformed input
-  }
-  if (msg.id === undefined) return; // notification, no response expected
-
-  switch (msg.method) {
-    case 'initialize':
-      send({
-        jsonrpc: '2.0',
-        id: msg.id,
-        result: {
-          protocolVersion: (msg.params && msg.params.protocolVersion) || '2025-06-18',
-          serverInfo: { name: 'gh-tool', version: build ? '1.0.0' : '0.0.0-no-gh' },
-          capabilities: { tools: {} },
-        },
-      });
-      break;
-    case 'tools/list':
-      send({ jsonrpc: '2.0', id: msg.id, result: { tools: build ? [GH_TOOL] : [] } });
-      break;
-    case 'tools/call': {
-      const name = msg.params && msg.params.name;
-      if (!build || name !== 'gh') {
-        send({
-          jsonrpc: '2.0',
-          id: msg.id,
-          error: {
-            code: -32601,
-            message: build ? `Unknown tool: ${name}` : 'gh unavailable, no tools',
-          },
-        });
-        break;
-      }
-      const result = await runGhTool(build, msg.params.arguments);
-      send({
-        jsonrpc: '2.0',
-        id: msg.id,
-        result: {
-          content: [{ type: 'text', text: result.text }],
-          isError: result.isError,
-        },
-      });
-      break;
-    }
-    case 'resources/list':
-      send({ jsonrpc: '2.0', id: msg.id, result: { resources: [] } });
-      break;
-    case 'prompts/list':
-      send({ jsonrpc: '2.0', id: msg.id, result: { prompts: [] } });
-      break;
-    case 'ping':
-      send({ jsonrpc: '2.0', id: msg.id, result: {} });
-      break;
-    default:
-      send({
-        jsonrpc: '2.0',
-        id: msg.id,
-        error: { code: -32601, message: `Method not found: ${msg.method}` },
-      });
-  }
+main().catch((err) => {
+  process.stderr.write(`gh-tool-or-stub.js: fatal error: ${err.message}\n`);
+  process.exit(1);
 });
