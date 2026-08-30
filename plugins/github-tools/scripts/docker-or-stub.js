@@ -16,6 +16,15 @@
  * plugin README) -- they're forwarded here only so someone who *does*
  * set them locally doesn't have to touch this script.
  *
+ * STUB IMPLEMENTATION: the no-docker fallback uses @modelcontextprotocol/sdk
+ * (declared in this plugin's package.json, auto-installed by Claude Code's
+ * documented Node-dependency mechanism) instead of a hand-rolled JSON-RPC
+ * reader. The SDK require() is deliberately deferred to inside runStub()
+ * rather than done at module load time: if that dependency install ever
+ * fails, this keeps the failure scoped to "no docker AND require fails" --
+ * the actual docker path above never touches the SDK at all and is
+ * unaffected either way.
+ *
  * IMPORTANT CAVEAT: Node has no equivalent of POSIX execve() that
  * replaces the current process image in place. This script approximates
  * "hand off to the docker process" by spawning it with inherited stdio
@@ -32,7 +41,6 @@
  */
 
 const { spawnSync, spawn } = require('child_process');
-const readline = require('readline');
 
 const image = process.argv[2];
 if (!image) {
@@ -49,7 +57,7 @@ const FORWARD_ENV = [
 
 function commandExists(cmd, args) {
   const result = spawnSync(cmd, args, { stdio: 'ignore' });
-  return !result.error && result.status === 0;
+  return !result.error && result.status !== null;
 }
 
 /**
@@ -107,61 +115,44 @@ function runDocker(resolved) {
 
 /**
  * Minimal stub MCP server for when Docker isn't reachable: answers the
- * initialize handshake, reports zero tools/resources/prompts, and
- * returns "method not found" for anything else. Keeps the plugin from
- * hard-failing on machines without Docker -- at the cost of that
- * server's tools being unavailable there.
+ * initialize handshake, reports zero tools/resources/prompts. Built on
+ * the official SDK rather than hand-parsed JSON-RPC -- see the file
+ * header for why the require() is deferred to here.
  */
 function runStub() {
-  const rl = readline.createInterface({ input: process.stdin, terminal: false });
-
-  function send(msg) {
-    process.stdout.write(JSON.stringify(msg) + '\n');
+  let Server, StdioServerTransport, ListToolsRequestSchema, ListResourcesRequestSchema, ListPromptsRequestSchema;
+  try {
+    ({ Server } = require('@modelcontextprotocol/sdk/server/index.js'));
+    ({ StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js'));
+    ({
+      ListToolsRequestSchema,
+      ListResourcesRequestSchema,
+      ListPromptsRequestSchema,
+    } = require('@modelcontextprotocol/sdk/types.js'));
+  } catch (err) {
+    process.stderr.write(
+      `docker-or-stub.js: docker unavailable and @modelcontextprotocol/sdk failed to load ` +
+      `(${err.message}). This plugin's Node dependencies may not have installed correctly.\n`
+    );
+    process.exit(1);
   }
 
-  rl.on('line', (line) => {
-    let msg;
-    try {
-      msg = JSON.parse(line);
-    } catch {
-      return; // ignore malformed input
-    }
-    if (msg.id === undefined) return; // notification, no response expected
+  const server = new Server(
+    { name: `${image}-stub`, version: '0.0.0-no-docker' },
+    { capabilities: { tools: {}, resources: {}, prompts: {} } }
+  );
 
-    switch (msg.method) {
-      case 'initialize':
-        send({
-          jsonrpc: '2.0',
-          id: msg.id,
-          result: {
-            protocolVersion: (msg.params && msg.params.protocolVersion) || '2025-06-18',
-            serverInfo: { name: `${image}-stub`, version: '0.0.0-no-docker' },
-            capabilities: { tools: {}, resources: {}, prompts: {} },
-          },
-        });
-        break;
-      case 'tools/list':
-        send({ jsonrpc: '2.0', id: msg.id, result: { tools: [] } });
-        break;
-      case 'resources/list':
-        send({ jsonrpc: '2.0', id: msg.id, result: { resources: [] } });
-        break;
-      case 'prompts/list':
-        send({ jsonrpc: '2.0', id: msg.id, result: { prompts: [] } });
-        break;
-      case 'ping':
-        send({ jsonrpc: '2.0', id: msg.id, result: {} });
-        break;
-      default:
-        send({
-          jsonrpc: '2.0',
-          id: msg.id,
-          error: {
-            code: -32601,
-            message: `Method not found (docker unavailable, ${image} is stubbed out)`,
-          },
-        });
-    }
+  // Declaring a capability above isn't enough on its own -- the SDK
+  // answers "method not found" for any list method with no registered
+  // handler, so each capability needs its own empty-list handler here.
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [] }));
+  server.setRequestHandler(ListResourcesRequestSchema, async () => ({ resources: [] }));
+  server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: [] }));
+
+  const transport = new StdioServerTransport();
+  server.connect(transport).catch((err) => {
+    process.stderr.write(`docker-or-stub.js: stub server failed to connect: ${err.message}\n`);
+    process.exit(1);
   });
 }
 
