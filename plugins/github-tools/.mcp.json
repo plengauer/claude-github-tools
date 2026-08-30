@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${user_config.github_token}",
+        "X-MCP-Toolsets": "all",
+        "X-MCP-Insiders": "true"
+      }
+    },
+    "github-rest-api": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/docker-or-stub.js",
+        "ghcr.io/plengauer/mcp-github-rest:latest"
+      ],
+      "env": {
+        "API_MCP_MODE": "stdio",
+        "HTTP_AUTHORIZATION": "Bearer ${user_config.github_token}"
+      }
+    },
+    "github-graphql-api": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/docker-or-stub.js",
+        "ghcr.io/plengauer/mcp-github-graphql:latest"
+      ],
+      "env": {
+        "API_MCP_MODE": "stdio",
+        "HTTP_AUTHORIZATION": "Bearer ${user_config.github_token}"
+      }
+    }
+  }
+}
