@@ -34,8 +34,11 @@
     "GitHub CLI": {
       "command": "node",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/scripts/gh-cli-server.js"
-      ]
+        "${CLAUDE_PLUGIN_ROOT}/scripts/gh-tool-or-stub.js"
+      ],
+      "env": {
+        "GH_TOKEN": "${user_config.github_token}"
+      }
     }
   }
 }
