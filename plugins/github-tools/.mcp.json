@@ -4,10 +4,10 @@
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp",
       "headers": {
-        "Authorization": "Bearer ${user_config.github_token}",
         "X-MCP-Toolsets": "all",
         "X-MCP-Insiders": "true"
-      }
+      },
+      "headersHelper": "node ${CLAUDE_PLUGIN_ROOT}/scripts/github-headers.js"
     },
     "GitHub REST API": {
       "command": "node",
