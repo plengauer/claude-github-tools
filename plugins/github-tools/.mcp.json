@@ -30,6 +30,12 @@
         "API_MCP_MODE": "stdio",
         "HTTP_AUTHORIZATION": "Bearer ${user_config.github_token}"
       }
+    },
+    "GitHub CLI": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/gh-cli-server.js"
+      ]
     }
   }
 }
