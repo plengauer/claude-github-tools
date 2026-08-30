@@ -1,8 +1,4 @@
 {
-  "name": "github-tools-mcp-scripts",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Node dependencies for the github-tools plugin's MCP launcher scripts (docker-or-stub.js, gh-tool-or-stub.js).",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0"
   }
