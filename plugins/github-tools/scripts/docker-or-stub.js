@@ -49,7 +49,7 @@ const FORWARD_ENV = [
 
 function commandExists(cmd, args) {
   const result = spawnSync(cmd, args, { stdio: 'ignore' });
-  return !result.error && result.status !== null;
+  return !result.error && result.status === 0;
 }
 
 /**
