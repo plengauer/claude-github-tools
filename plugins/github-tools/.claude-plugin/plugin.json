@@ -5,5 +5,13 @@
     "name": "Philipp Lengauer",
     "url": "https://github.com/plengauer"
   },
-  "keywords": ["github", "pull-requests", "ci", "code-review", "automation"]
+  "keywords": ["github", "pull-requests", "ci", "code-review", "automation"],
+  "userConfig": {
+    "github_token": {
+      "type": "string",
+      "title": "GitHub token",
+      "description": "Personal access token (or OAuth token) used to authenticate against GitHub's REST, GraphQL, and Copilot MCP APIs.",
+      "sensitive": true
+    }
+  }
 }

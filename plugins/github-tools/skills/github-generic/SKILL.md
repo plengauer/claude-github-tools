@@ -31,9 +31,11 @@ Tier 2 ── GitHub REST API MCP     (GitHub REST API:* tools)
     ↓  [escalate if needed]
 Tier 3 ── GitHub GraphQL API MCP  (GitHub GraphQL API:* tools)
     ↓  [escalate if needed]
-Tier 4 ── Chrome (remote control) (Claude in Chrome:* tools)
+Tier 4 ── GitHub CLI MCP (gh)     (GitHub CLI:* tools)
     ↓  [escalate if needed]
-Tier 5 ── Computer control        (computer:* tools)
+Tier 5 ── Chrome (remote control) (Claude in Chrome:* tools)
+    ↓  [escalate if needed]
+Tier 6 ── Computer control        (computer:* tools)
 ```
 
 Never skip tiers proactively. If a higher tier can do the job, use it — even
@@ -100,15 +102,22 @@ Use when Tier 2 also fails or is blocked. GraphQL is useful for:
 - Mutations not available in REST (e.g. resolving review threads, project v2
   item mutations, certain discussion operations)
 
-### Tier 4 — Chrome (remote control)
+### Tier 4 — GitHub CLI MCP (`GitHub CLI:*`)
+
+Use when Tiers 1–3 all fail or are blocked. This tier wraps the `gh` CLI
+itself, authenticated via the same GitHub token as the other tiers. It can do
+everything an authenticated `gh` CLI can do — the full surface of `gh`'s own
+command set, including anything Tiers 1–3 don't expose.
+
+### Tier 5 — Chrome (remote control)
 
 Use `Claude in Chrome:*` tools to drive a real browser session when all API
 tiers have failed or are unavailable.
 
-**Rules for Tier 4**:
+**Rules for Tier 5**:
 - First verify Chrome is connected (`Claude in Chrome:list_connected_browsers`).
-  If Chrome is not connected, escalate to Tier 5.
-- **Open a new tab** at the start of any Tier 4 operation. **Close that tab**
+  If Chrome is not connected, escalate to Tier 6.
+- **Open a new tab** at the start of any Tier 5 operation. **Close that tab**
   when the operation is complete, leaving the browser in the state it was in
   before.
 - Navigate to `https://github.com` and confirm the user is already logged in
@@ -119,12 +128,12 @@ tiers have failed or are unavailable.
 
 Read `references/chrome-fallback.md` for detailed step-by-step guidance.
 
-### Tier 5 — Computer control (`computer:*`)
+### Tier 6 — Computer control (`computer:*`)
 
 **Last resort.** Use computer-control tools to open Chrome manually and interact
 with GitHub via clicks and keyboard input when all other tiers are unavailable.
 
-**Rules for Tier 5**:
+**Rules for Tier 6**:
 - First verify computer-control tools are available. If they are not, tell the
   user you cannot complete the action automatically and give them clear manual
   instructions instead.
@@ -152,7 +161,7 @@ Move from the current tier to the next when **any** of the following occur:
 | **Rate-limited (429)** with no retry path | Quota exhausted, cannot wait |
 | **Persistent 5xx errors** | Server error on repeated attempts |
 | **Feature gap confirmed** | Tool exists but explicitly lacks the capability |
-| **Tier not connected / unavailable** | Chrome not connected, computer tools absent |
+| **Tier not connected / unavailable** | Chrome not connected, computer tools absent, `gh` not installed (native or WSL) |
 
 **Do not escalate** for:
 - Transient network errors (retry once or twice first)
@@ -242,13 +251,13 @@ GitHub REST API MCP instead."*
 | Manage webhooks | Tier 2 |
 | Manage Dependabot alerts/secrets | Tier 2 |
 | Configure Pages, rulesets, environments | Tier 2 |
-| Resolve PR review threads | Tier 3, then Tier 4 |
+| Resolve PR review threads | Tier 3, then Tier 5 |
 | GitHub Projects v2 mutations | Tier 3 |
-| Anything requiring a logged-in browser click | Tier 4, then Tier 5 |
+| Anything requiring a logged-in browser click | Tier 5, then Tier 6 |
 
 ---
 
 ## Reference Files
 
-- `references/chrome-fallback.md` — Detailed instructions for Tier 4 browser
+- `references/chrome-fallback.md` — Detailed instructions for Tier 5 browser
   automation. Read this before using any `Claude in Chrome:*` tools.
