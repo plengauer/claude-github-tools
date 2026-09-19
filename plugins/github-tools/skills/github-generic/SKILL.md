@@ -236,6 +236,9 @@ GitHub REST API MCP instead."*
    than a content-update endpoint that doesn't let you set mode. Flag it to
    the user if you had to repair a permission regression.
 
+10. **Assign PRs to self** All PRs created shall assign the current user,
+    unless explicitly instructed otherwise.
+
 ---
 
 ## Quick-Reference: Which Tier for Common Tasks?
