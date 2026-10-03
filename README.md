@@ -1,7 +1,7 @@
 # skills-github
 
 A Claude plugin marketplace containing a single plugin, **github-tools**: a
-family of 10 skills for GitHub operations and pull-request maintenance.
+family of 11 skills for GitHub operations and pull-request maintenance.
 
 These skills were exported as-is from a Claude session's synced skill set
 (`~/.claude/skills/synced/github-*`) on 2026-08-25.
@@ -28,7 +28,7 @@ To pick up future updates to this repo:
 
 ## What's included
 
-All 10 skills live under `plugins/github-tools/skills/`:
+All 11 skills live under `plugins/github-tools/skills/`:
 
 | Skill | Purpose |
 |---|---|
@@ -42,8 +42,9 @@ All 10 skills live under `plugins/github-tools/skills/`:
 | `github-pr-iterate` | Orchestrates the four skills above into one holistic pass per PR, posting at most one combined Copilot comment. |
 | `github-pr-approve-automation` | Approves a PR only if it's self-updating automation without an existing approval, so auto-merge can clear its review gate. |
 | `github-pr-reassign-broken-copilot` | Detects a coding-agent PR whose backing session silently died, resets the source issue, and reassigns it to Copilot. |
+| `github-agentic-workflow-run` | Manually runs a GitHub Agentic Workflow (`.github/workflows/<name>.md`) against one trigger (issue, comment, PR, …), respecting all frontmatter and writing only through its declared safe outputs. |
 
-Each skill is scoped to exactly one PR per invocation and is written to work
+Each PR skill is scoped to exactly one PR per invocation and is written to work
 standalone; `github-pr-iterate` is the only one that composes the others.
 
 ## Repository structure
