@@ -161,6 +161,7 @@ Move from the current tier to the next when **any** of the following occur:
 | **Rate-limited (429)** with no retry path | Quota exhausted, cannot wait |
 | **Persistent 5xx errors** | Server error on repeated attempts |
 | **Feature gap confirmed** | Tool exists but explicitly lacks the capability |
+| **Hung call (no result after timeout)** | See "Hung Tool Calls" below |
 | **Tier not connected / unavailable** | Chrome not connected, computer tools absent, `gh` not installed (native or WSL) |
 
 **Do not escalate** for:
@@ -171,6 +172,64 @@ Move from the current tier to the next when **any** of the following occur:
 When escalating, tell the user which tier you are moving to and briefly why.
 Example: *"The GitHub MCP doesn't expose webhook management, so I'll use the
 GitHub REST API MCP instead."*
+
+---
+
+## Hung Tool Calls
+
+A tool call that hangs and never returns is not an error, so the escalation
+criteria above never fire on their own. Apply these rules.
+
+1. **A hang is a failure signal.** Treat "no result after the timeout" as a
+   tier failure and escalate on it. Do **not** retry the identical call — a
+   call that hung once will hang again, costing the full timeout each time.
+   Retry the same call only when something external has demonstrably changed
+   (servers restarted, stuck approval dialog cleared, credentials altered). If
+   the user asks for a repeat, comply once, but say plainly that it repeats a
+   call that already failed and that nothing observable has changed.
+
+2. **Verify against the remote first.** A hang does not tell you whether a
+   write landed; the request may have succeeded with the response lost. After
+   any hung write, read the remote state before retrying, reporting, or
+   escalating:
+   - File content: fetch `raw.githubusercontent.com/OWNER/REPO/BRANCH/PATH`
+     with a cache-buster. It doesn't touch the stuck path.
+   - Refs, PRs, commits: use any read tool.
+
+   Never report a write as failed, or retry it, on the strength of the timeout
+   alone. Retrying a write that succeeded can duplicate commits or clobber
+   newer state.
+
+3. **Probe to localize before escalating.** Before spending a full timeout per
+   tier, spend one call narrowing down *what* is gated:
+
+   | Probe | Distinguishes |
+   |---|---|
+   | any read (`get_content`, `list_commits`) | transport dead vs. writes gated |
+   | content-free write (`gitcreate_ref` — scratch branch) | all writes gated vs. content writes gated |
+   | tiny content write (6-byte file, scratch branch) | payload size vs. operation class |
+   | non-default branch target | branch protection vs. everything else |
+
+   `gitcreate_blob` is the sharpest probe for content writes: the smallest
+   content-creating call, with no commit, ref, or branch involved. If it
+   hangs, every content route will hang and the remaining tiers aren't worth
+   walking. Probes also reveal what *still works* (e.g. PR creation and
+   auto-merge may stay reachable once content arrives by another path). This
+   table is calibrated on a single incident; the principle — one cheap call to
+   narrow the hypothesis before a full timeout per tier — holds regardless.
+
+4. **Budget the wall clock, report early.** Allow roughly 3 failed attempts or
+   ~10 minutes (calibrated to a four-minute timeout), whichever comes first.
+   Then stop and report: what was tried, what the probes established and ruled
+   out, the verified remote state (landed / did not land), and the routes
+   still open, including manual ones. A hung tool is usually an environment
+   problem the user can fix in seconds (restart a server, clear a dialog,
+   grant a permission); escalating to the human early is the cheap move.
+
+5. **Clean up and disclose probe artifacts.** Probes create real things
+   (scratch branches, test files). Track them, tell the user what was created,
+   and remove them or ask. Prefer probes that are harmless if they succeed —
+   e.g. `gitcreate_tree` without a ref update creates only a dangling object.
 
 ---
 
