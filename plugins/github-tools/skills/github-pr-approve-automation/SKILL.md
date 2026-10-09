@@ -13,9 +13,10 @@ compatibility: >
   Needs a way to list a PR's formal reviews (state + author) and submit
   an approving review — GitHub's REST or GraphQL API covers both. Note
   that GitHub does not let a PR's author approve their own PR (see the
-  Task section below) — this is a platform rule, not a tool limitation.
+  Step 3 section below) — this is a platform rule, not a tool limitation.
   Also needs the `github-pr-automation-detection` skill to classify the
-  PR.
+  PR, which in turn needs read access to the repo's workflows and their
+  runs.
 ---
 
 # GitHub PR Approve Automation
@@ -39,44 +40,91 @@ This skill operates on exactly one PR per invocation — given as a URL or
 a caller that wants this applied across several PRs invokes it once per
 PR.
 
-## Gate: at least one commit
+## Gates
 
-Before anything else, confirm the PR has at least one commit. A PR with
-literally zero commits isn't a real candidate yet — stop immediately and
-report that plainly rather than proceeding. Everything below assumes
-this gate has passed.
+Check these first, in order, and stop at the first that fails — report
+it plainly rather than proceeding. Everything below assumes they passed.
 
-## Step 0: Gather state
+1. **At least one commit.** A PR with literally zero commits isn't a real
+   candidate yet.
+2. **Open and ready.** The PR must be open — not closed, not already
+   merged — and not a draft. Approving a closed or merged PR does
+   nothing useful, and a draft is by definition not yet asking to be
+   merged, so auto-merge has nothing to clear.
 
-- Whether the PR is self-updating automation — consult the
-  `github-pr-automation-detection` skill for the classification.
-- Every formal review submitted on the PR (distinct from comment
-  threads) and each one's state (approved, changes-requested, commented,
-  pending, dismissed) and author.
+## Step 1: Is it already approved — in a way that counts?
 
-## Task: approve if eligible
+The point of approving is to clear the review gate, so the question is
+not "does an approval exist" but "is the review requirement already
+satisfied".
 
-Uses the classification from the `github-pr-automation-detection` skill:
-this PR only qualifies here if it's classified `automation`. A PR
-classified `coding-agent` or `human` — including anything that doesn't
-clearly match a known signature — stays out of scope, don't guess; stop
-and report it as not eligible.
+- **Preferred:** if the means you're using exposes GitHub's own overall
+  review decision for the PR (the same verdict branch protection and
+  rulesets use), go by that. If it says approved, there's nothing to do —
+  report it as already approved and stop.
+- **Otherwise, judge the individual reviews.** An existing approval only
+  counts if all of these hold:
+  - It's still in effect — not dismissed, and not superseded by a later
+    changes-requested review from the same person.
+  - Its author is someone whose approval counts for the base branch —
+    at least write access to the repo (an approval from an outside
+    account without it doesn't satisfy branch protection), and a code
+    owner if the base branch requires code-owner review for the files
+    touched.
+  - If the base branch dismisses stale approvals or requires approval of
+    the most recent push, it was submitted on the PR's **current** head
+    commit. An approval on an older commit doesn't count under those
+    rules.
 
-If it is `automation`:
+  If you can't see branch protection or ruleset settings, assume the
+  strict reading — an approval on an older commit doesn't count — since
+  approving again is harmless, while wrongly reporting "already
+  approved" leaves auto-merge stuck with nobody noticing.
 
-- If the PR already carries an **approved** review from anyone, there's
-  nothing to do — report it as already approved.
-- If it carries a **changes-requested** review that no later review from
-  that same person has superseded, leave it alone — a human already
+If a counting approval exists, report already approved and stop. If one
+exists but doesn't count, carry on, and say in the report which one was
+there and why it didn't count.
+
+## Step 2: Classify
+
+Consult the `github-pr-automation-detection` skill. This PR only
+qualifies if it's classified `automation`. A PR classified `coding-agent`
+or `human` — including anything that doesn't clearly match a known
+signature, or fails its author or workflow checks — stays out of scope,
+don't guess; stop and report it as not eligible, with the reason the
+classifier gave.
+
+Keep the **head commit SHA** the classifier reports — that's the commit
+whose diff was actually looked at.
+
+## Step 3: Approve if eligible
+
+- If the PR carries a **changes-requested** review that no later review
+  from that same person has superseded, leave it alone — a human already
   objected to this specific PR, and matching an automation pattern
   doesn't override that. Report it as skipped, with the reason.
 - Otherwise, submit an approving review (GitHub's `APPROVE` event). No
   review body is needed — an empty-body approval is valid, so don't
   compose one just to have something to say.
 
+**Approve exactly the commit that was classified.** Automation pushes
+new commits on its own (Renovate rebases, version bumps re-run), so the
+head can move between classification and approval, and an approval
+landing on an unclassified diff waves through a change nobody looked at.
+
+- If the means you're using lets you name the commit a review applies to,
+  name the classified head commit SHA — never "whatever the head is now".
+- Either way, re-read the PR's head right before approving. If it no
+  longer matches the classified SHA, don't approve: report that the head
+  moved since classification and that the PR needs a fresh pass. (With
+  the commit named, a push in the instant after this check is harmless —
+  the approval still lands on the commit that was classified, and the
+  review gate simply re-evaluates for the new head.)
+
 Expect the approval itself to fail often, for a structural reason rather
 than a tool problem: several of the automation categories here
-(version-bump, OTel-deploy, workflow-recompile, self-hosted Renovate)
+(version-bump, OTel-deploy, workflow-recompile, self-hosted Renovate,
+backports)
 open their PRs under **the repo owner's own account** rather than a
 separate bot account (see the `github-pr-automation-detection` skill),
 and GitHub does not let a PR's author approve their own PR — a hard
@@ -96,12 +144,16 @@ click approve themselves. PRs from a truly separate bot account
 No tables — a short, plain summary of this one PR:
 
 - The PR's title and URL.
-- If the gate failed: say so and stop there.
+- If a gate failed: which one (no commits, closed, merged, draft) — and
+  stop there.
+- If it was already approved: say so, and whose approval satisfied it.
+  If an approval existed but didn't count, say why it didn't.
 - Whether it was classified automation, and if not, that it's out of
-  scope.
-- If automation: whether it was already approved, approved just now, or
-  left alone (changes-requested outstanding, or the acting account is
-  the PR's author) — say which, and why.
+  scope and which check it stopped at.
+- If automation: whether it was approved just now (and on which commit),
+  or left alone — changes-requested outstanding, the acting account is
+  the PR's author, or the head moved since classification — say which,
+  and why.
 - If the approve call itself errored for a reason other than the
   self-approval platform rule, say what errored.
 
