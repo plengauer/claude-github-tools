@@ -77,10 +77,34 @@ look for signs of an active coding-agent session on the PR, or an
 existing rebase-related mention in recent comments newer than the PR's
 last push. If found, report that and stop — don't draft a duplicate ask.
 
-Otherwise, draft an instruction along these lines:
+Otherwise, draft an instruction along these lines, with `{base}`
+replaced by the PR's actual base branch:
 
-> @copilot this PR has a merge conflict with the base branch. Please
-> rebase (or merge the base branch in) and resolve the conflicts.
+> @copilot this PR has a merge conflict with `{base}`. Please merge
+> `{base}` into this branch and resolve the conflicts so that the intent
+> of both sides is preserved:
+> - Take this PR's intent from the branch's current state: the net
+>   effect of all its commits, whoever authored them. Later commits
+>   supersede earlier ones. The PR description, linked issues, and
+>   earlier commits may be outdated, so don't treat them as the spec.
+> - Take `{base}`'s intent from the commits on `{base}` since this
+>   branch diverged.
+> - Combine both in the conflicting hunks. Where both sides made the
+>   same change, keep it once.
+> - Don't modify files or lines that merged cleanly, and don't
+>   reintroduce code that later commits on either side removed.
+> - If the two intents genuinely contradict each other, don't pick one
+>   silently. Resolve it as best you can and explain the trade-off in a
+>   PR comment.
+> - Afterwards, update the PR description if it no longer matches the
+>   code.
+
+Neither side wins by default — not the PR, not the base branch. The
+point of these rules is that a coding agent asked to "resolve the
+conflicts" tends to reconstruct the PR from its description or its own
+earlier work, silently discarding later commits on the branch (by
+anyone) and touching files that weren't even in conflict. Keep these
+rules in the drafted instruction even when shortening or rephrasing it.
 
 Always mention `@copilot` specifically, regardless of who or what opened
 the PR — Copilot, Codex, Claude, or a human. Do not address the request
