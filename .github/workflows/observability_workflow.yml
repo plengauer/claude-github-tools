@@ -2,6 +2,7 @@ name: OpenTelemetry
 on:
   workflow_run:
     workflows:
+      - Analyze
       - Autobackport
       - Autotriage
       - Autoversion
