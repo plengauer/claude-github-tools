@@ -9,7 +9,7 @@
     {
       "name": "github-tools",
       "source": "./plugins/github-tools",
-      "description": "GitHub PR maintenance and general GitHub operations skill family: tool-priority ladder for GitHub actions, automation/coding-agent detection, volatile CI failure detection and rerun, deep check-failure analysis, merge-conflict rebase requests, review/comment triage, broken coding-agent PR reassignment, automation PR approval, and a full-PR orchestrator."
+      "description": "GitHub PR maintenance and general GitHub operations skill family: tool-priority ladder for GitHub actions, automation/coding-agent detection, volatile CI failure detection and rerun, deep check-failure analysis, merge-conflict rebase requests, review/comment triage, broken coding-agent PR reassignment, PR review with automation auto-approval, and a full-PR orchestrator."
     }
   ]
 }

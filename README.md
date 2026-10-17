@@ -40,7 +40,7 @@ All 11 skills live under `plugins/github-tools/skills/`:
 | `github-pr-rebase-conflicted` | Asks a coding agent to rebase a PR with a real merge conflict, unless the PR is self-updating automation. |
 | `github-pr-handle-change-requests` | Triages every review and review thread on a PR — resolves noise, applies clear-cut suggestions, asks Copilot to fix the rest, and surfaces genuinely ambiguous items for a human. |
 | `github-pr-iterate` | Orchestrates the four skills above into one holistic pass per PR, posting at most one combined Copilot comment. |
-| `github-pr-approve-automation` | Approves a PR only if it's self-updating automation without an existing approval, so auto-merge can clear its review gate. |
+| `github-pr-review` | Reviews a PR in the user's name. Approves self-updating automation after classifying it; reviews everything else against its whole diff, description, linked issues and repository instructions, posts inline comments, and finishes with approve, request changes or comment — or holds the verdict and escalates to the user when unsure. |
 | `github-pr-reassign-broken-copilot` | Detects a coding-agent PR whose backing session silently died, resets the source issue, and reassigns it to Copilot. |
 | `github-agentic-workflow-run` | Manually runs a GitHub Agentic Workflow (`.github/workflows/<name>.md`) against one trigger (issue, comment, PR, …), respecting all frontmatter and writing only through its declared safe outputs. |
 
