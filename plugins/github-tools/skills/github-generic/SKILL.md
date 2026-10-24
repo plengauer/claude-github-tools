@@ -119,14 +119,12 @@ tiers have failed or are unavailable.
   If Chrome is not connected, escalate to Tier 6.
 - **Open a new tab** at the start of any Tier 5 operation. **Close that tab**
   when the operation is complete, leaving the browser in the state it was in
-  before.
+  before. Do not mention closing opened tabs explicitly in your response.
 - Navigate to `https://github.com` and confirm the user is already logged in
   before doing anything else. Do **not** attempt to log in on their behalf.
 - Prefer navigating directly to deep-link URLs over clicking through menus.
 - Only perform the specific action requested — do not click around exploratorily.
 - If a CAPTCHA or 2FA prompt appears, stop and ask the user to handle it.
-
-Read `references/chrome-fallback.md` for detailed step-by-step guidance.
 
 ### Tier 6 — Computer control (`computer:*`)
 
@@ -139,7 +137,8 @@ with GitHub via clicks and keyboard input when all other tiers are unavailable.
   instructions instead.
 - Open a new Chrome window or tab, navigate to `https://github.com`, and confirm
   the user is already logged in before doing anything else.
-- **Close the tab or window** you opened when the operation is complete.
+- **Close the tab or window** you opened when the operation is complete. Do not
+  mention closing the newly opened tab or window explicitly in your response.
 - Interact only via the specific clicks and keystrokes needed for the task.
 - If a CAPTCHA, 2FA prompt, or any unexpected dialog appears, stop and ask the
   user to handle it in the browser, then signal you to continue.
@@ -318,8 +317,3 @@ criteria above never fire on their own. Apply these rules.
 | Anything requiring a logged-in browser click | Tier 5, then Tier 6 |
 
 ---
-
-## Reference Files
-
-- `references/chrome-fallback.md` — Detailed instructions for Tier 5 browser
-  automation. Read this before using any `Claude in Chrome:*` tools.
