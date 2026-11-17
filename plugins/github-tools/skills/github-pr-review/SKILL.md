@@ -5,21 +5,24 @@ description: >
   with an approval, a request for changes, or a comment-only review —
   or, when unsure, hold the verdict and hand the decision to the user.
   Self-updating automation (per `github-pr-automation-detection`) is
-  approved after the classifier's checks; every other PR gets a careful
-  review of its whole diff against the description, linked issues,
-  existing reviews, repository instructions and the surrounding code,
-  with each finding posted as an inline comment. Scoped to exactly one
-  PR per invocation. Use whenever the user asks to "review this PR",
-  "review the PRs waiting on me", "approve this automation PR", "clear
-  the review gate on this Renovate PR", or as the per-PR step of a
-  scheduled review pass.
+  approved after the classifier's checks, and any of its workflow runs
+  waiting for approval to run are approved along with it; every other PR
+  gets a careful review of its whole diff against the description,
+  linked issues, existing reviews, repository instructions and the
+  surrounding code, with each finding posted as an inline comment.
+  Scoped to exactly one PR per invocation. Use whenever the user asks to
+  "review this PR", "review the PRs waiting on me", "approve this
+  automation PR", "clear the review gate on this Renovate PR", or as the
+  per-PR step of a scheduled review pass.
 compatibility: >
   Needs a way to read a PR's metadata, commits, full diff (or per-file
   patches), checks, reviews, review threads and comments, plus linked
   issues and repository files at a given ref, and a way to submit a
   formal review with inline comments pinned to a commit — GitHub's REST
-  or GraphQL API covers all of it. Also needs the
-  `github-pr-automation-detection` skill, and
+  or GraphQL API covers all of it. For automation PRs it also needs a way
+  to list a commit's workflow runs and approve the ones waiting for
+  approval (REST: list workflow runs, approve a workflow run). Also needs
+  the `github-pr-automation-detection` skill, and
   `github-pr-volatile-failure-detection` to judge failing checks. Note
   that GitHub does not let a PR's author approve their own PR — a
   platform rule, not a tool limitation.
@@ -143,9 +146,10 @@ not "does an approval exist" but "is the requirement already satisfied".
   strict reading. Approving again is harmless, while wrongly reporting
   "already approved" leaves auto-merge stuck with nobody noticing.
 
-If a counting approval exists, report it and stop. If one exists but
-doesn't count, carry on and say in the report which one it was and why
-it didn't count.
+If a counting approval exists, the review requirement is met: skip A2 to
+A4, carry on with A5 for the classified commit, and report the approval.
+If one exists but doesn't count, carry on and say in the report which one
+it was and why it didn't count.
 
 ### A2. Leave it alone if someone objected
 
@@ -184,6 +188,34 @@ If anything you saw along the way contradicts the classification — a
 hand-written change inside a "version bump", a workflow you didn't
 expect — don't approve. Treat it as a **hold** (see "Escalating to the
 user") and say what looked off.
+
+### A5. Approve workflow runs that are waiting for approval
+
+Applies only when Path A ends with the PR approved — an approval just
+submitted in A4, or one found to count in A1. Any skip or hold stops
+before this step: workflow runs are never approved for a PR that wasn't
+approved.
+
+GitHub holds some runs back until someone with write access approves
+them to run, and the PR's checks stay missing until then, which leaves
+auto-merge waiting forever. The approval the classifier and A1 to A4
+earned covers these runs too.
+
+- List the workflow runs for the **classified head commit** waiting for
+  approval (status `action_required`), through all pages. Only runs
+  whose head SHA is the classified SHA are in scope; a run on any other
+  commit is left alone.
+- Re-read the PR's head right before approving the runs. If it no longer
+  matches the classified SHA, approve nothing and report that the head
+  moved.
+- Approve each run (REST: approve a workflow run).
+- Read the runs back and confirm none is still waiting for approval. A
+  run that can't be approved (permissions, a run that has since been
+  cancelled or already approved) is named in the report, not retried
+  through other tiers.
+- Runs held by a deployment environment's required reviewers are a
+  different gate with different consequences. Leave them alone and
+  mention them in the report.
 
 ## Path B: full review
 
@@ -413,7 +445,10 @@ No tables — a short, plain summary of this one PR:
 - Which path it took. For automation: already approved (and whose
   approval counted), approved just now (and on which commit), or skipped
   — objection outstanding, the acting account is the author, or the head
-  moved. For a review: the outcome, the number of blocking and
+  moved. For an approved automation PR, also which workflow runs were
+  waiting for approval and got approved, which couldn't be, and any left
+  alone because a deployment environment holds them — or that none were
+  waiting. For a review: the outcome, the number of blocking and
   non-blocking comments, and a link to the review.
 - Anything left unverified, and anything that errored, named explicitly.
 
@@ -424,6 +459,8 @@ PR's branch or applies suggestions to it, or edits, dismisses or resolves
 anyone else's review or thread. Doesn't request reviews from anyone, and
 doesn't rerun, fix or diagnose checks beyond reading them — see
 `github-pr-rerun-volatile-checks` and `github-pr-fix-checks` for that.
-Doesn't ask Copilot to fix what it found; the review is addressed to the
-author. Doesn't run the PR's code. And it never submits an approval it
+Approves workflow runs only for an automation PR it has approved (A5),
+never for any other PR and never on a commit other than the classified
+one. Doesn't ask Copilot to fix what it found; the review is addressed to
+the author. Doesn't run the PR's code. And it never submits an approval it
 isn't sure of.
