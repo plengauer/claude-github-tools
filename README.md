@@ -1,7 +1,7 @@
 # skills-github
 
 A Claude plugin marketplace containing a single plugin, **github-tools**: a
-family of 11 skills for GitHub operations and pull-request maintenance.
+family of 12 skills for GitHub operations and pull-request maintenance.
 
 These skills were exported as-is from a Claude session's synced skill set
 (`~/.claude/skills/synced/github-*`) on 2026-08-25.
@@ -28,7 +28,7 @@ To pick up future updates to this repo:
 
 ## What's included
 
-All 11 skills live under `plugins/github-tools/skills/`:
+All 12 skills live under `plugins/github-tools/skills/`:
 
 | Skill | Purpose |
 |---|---|
@@ -43,6 +43,7 @@ All 11 skills live under `plugins/github-tools/skills/`:
 | `github-pr-review` | Reviews a PR in the user's name. Approves self-updating automation after classifying it; reviews everything else against its whole diff, description, linked issues and repository instructions, posts inline comments, and finishes with approve, request changes or comment — or holds the verdict and escalates to the user when unsure. |
 | `github-pr-reassign-broken-copilot` | Detects a coding-agent PR whose backing session silently died, resets the source issue, and reassigns it to Copilot. |
 | `github-agentic-workflow-run` | Manually runs a GitHub Agentic Workflow (`.github/workflows/<name>.md`) against one trigger (issue, comment, PR, …), respecting all frontmatter and writing only through its declared safe outputs. |
+| `github-workflow-catch-up` | Finds events a workflow missed because they were caused by the workflow `GITHUB_TOKEN` (which doesn't trigger other workflows) within a timeframe, and replays them via `workflow_dispatch` — or opens a PR adding a minimal dispatch trigger when the workflow has none. |
 
 Each PR skill is scoped to exactly one PR per invocation and is written to work
 standalone; `github-pr-iterate` is the only one that composes the others.
