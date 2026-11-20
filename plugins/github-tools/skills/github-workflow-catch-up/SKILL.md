@@ -194,7 +194,8 @@ A flood of runs is the user's call.
 
 Dispatching works only if the workflow has a `workflow_dispatch` trigger
 **and** a dispatched run can do what the missed event would have made it
-do. Compare, for each kind of missed event, what the workflow reads from
+do **and** a previous dispatch has not already caught up to this missed event.
+Compare, for each kind of missed event, what the workflow reads from
 the event (Step 1) with what the dispatch inputs, the dispatch ref and the
 dispatching actor can supply. A run started by dispatch has an empty event
 payload apart from `inputs` and `ref`, and `github.event_name` is
