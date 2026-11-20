@@ -250,7 +250,8 @@ name input and a JSON payload input, and don't pass a webhook payload
 through. Design the inputs for **this workflow**, case by case, the way a
 maintainer who wrote a `workflow_dispatch` trigger by hand for it would:
 from the list of what each job actually reads from the event (Step 1),
-for each trigger that has missed events.
+for each trigger that has missed events. The inputs shall have a strong
+name and description about their format.
 
 1. Branch from the default branch. Change only the workflow file.
 2. **Derive the inputs from what the workflow reads.**
